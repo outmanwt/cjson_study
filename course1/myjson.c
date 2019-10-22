@@ -13,27 +13,25 @@
 	那么第一行的意思是，JSON 文本由 3 部分组成，首先是空白（whitespace），接着是一个值，最后是空白。
 	第二行告诉我们，所谓空白，是由零或多个空格符（space U+0020）、制表符（tab U+0009）、换行符（LF U+000A）、回车符（CR U+000D）所组成。
 */
-//读空格
-void read_blank_first ( const char **c )
-{
-	while ( **c == ' ' || **c == '\t' || **c == '\n' || **c == '\r' )
-		*c = ( void * ) ( *c + 1 );
-}
-//解析!int可以改个名字
+void read_blank_first ( const char **c );
+json_error json_parse_null(const char *c,json_value *v);
+json_error read_value(const char *c,json_value *v);
+
+
+/*解析!int可以改个名字*/
 json_error json_parse(json_value *v,const char *json)
 {
-	assert(v!=NULL);
 	const char *c = json;
+	assert(v!=NULL);
 	v->type = JSON_NULL;
-	//读空格
+	/*读空格*/
 	read_blank_first(&c);
-	//读值
+	/*读值*/
 	return read_value(c,v);	
 }
-
-json_parse_null(const char *c,json_value *v)
+json_error json_parse_null(const char *c,json_value *v)
 {
-	//再检查一遍c是否为n?有必要？
+	/*再检查一遍c是否为n?有必要？*/
 	assert(*c=='n');
 	if(c[1]!='u'||c[2]!='l'||c[3]!='l')
 		return JSON_INPUT_ERROR;
@@ -41,6 +39,8 @@ json_parse_null(const char *c,json_value *v)
 	v->type = JSON_NULL;
 	return JSON_OK;
 }
+
+/*读空格*/
 json_error read_value(const char *c,json_value *v)
 {
 	switch(*c)
@@ -50,7 +50,13 @@ json_error read_value(const char *c,json_value *v)
 		default : 	return JSON_INPUT_ERROR;
 	}
 }
-//获取类型用来检验
+void read_blank_first ( const char **c )
+{
+	while ( **c == ' ' || **c == '\t' || **c == '\n' || **c == '\r' )
+		*c = ( void * ) ( *c + 1 );
+}
+
+/*获取类型用来检验*/
 json_type json_get_type ( const json_value *v )
 {
 	assert ( v != NULL );

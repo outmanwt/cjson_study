@@ -7,9 +7,10 @@
 int main() 
 {
 	json_value v;
-	v.type = JSON_FALSE;
 	const char *json = "c ";
-	json_error err = json_parse ( &v , json );
+	json_error err;
+	v.type = JSON_FALSE;
+	err = json_parse ( &v , json );
 	fprintf ( stderr , "%d\n", err); 
 	return 0;
 }
