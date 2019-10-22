@@ -29,13 +29,23 @@ json_error json_parse_false(json_struct *c,json_value *v);
 json_error json_parse(json_value *v,const char *json)
 {
 	json_struct c;
+	json_error temp;
 	c.json = json;
 	assert(v!=NULL);
 	v->type = JSON_NULL;
 	/*读空格*/
 	read_blank_first(&c);
 	/*读值*/
-	return read_value(&c,v);	
+	if((temp = read_value(&c,v))==JSON_OK)
+	{
+		read_blank_first(&c);
+		if(*c.json!='\0')
+		{
+			return JSON_INPUT_ERROR;
+		}
+	}	
+
+	return temp;
 }
 /*获取类型*/
 json_type json_get_type ( const json_value *v )
@@ -59,7 +69,7 @@ json_error json_parse_true(json_struct *c,json_value *v)
 {
 	/*再检查一遍c是否为n?有必要？*/
 	assert(*c->json=='t');
-	if(c->json[1]!='u'||c->json[2]!='r'||c->json[3]!='e')
+	if(c->json[1]!='r'||c->json[2]!='u'||c->json[3]!='e')
 		return JSON_INPUT_ERROR;
 	c->json+=4;
 	v->type = JSON_TRUE;

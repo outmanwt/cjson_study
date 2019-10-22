@@ -86,7 +86,15 @@ static void invalid_input_test()
 	/*是否解析成功*/
 	EXPECT_EQ_PARSE(JSON_INPUT_ERROR,json_parse(&v," true?"));
 	/*解析类型是否相等*/
-	EXPECT_EQ_EQUAL(JSON_NULL,json_get_type(&v));
+	EXPECT_EQ_EQUAL(JSON_TRUE,json_get_type(&v));
+}
+static void parse_test()
+{
+	null_test();
+	true_test();
+	false_test();
+	empty_test();
+	invalid_input_test();
 }
 int main() 
 {
@@ -104,12 +112,7 @@ int main()
 	fprintf ( stderr , "%s:%s\n", "true",str[json_parse ( &v , "true" )]); 
 	fprintf ( stderr , "%s:%s\n", "false",str[json_parse ( &v , "false" )]); 
 */
-	null_test();
-	true_test();
-	false_test();
-	empty_test();
-	invalid_input_test();
-
+	parse_test();
 	printf("%d/%d (%3.2f%%) passed\n", test_pass, test_count, test_pass * 100.0 / test_count);
 	return 0;
 }
