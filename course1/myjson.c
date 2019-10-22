@@ -13,60 +13,74 @@
 	那么第一行的意思是，JSON 文本由 3 部分组成，首先是空白（whitespace），接着是一个值，最后是空白。
 	第二行告诉我们，所谓空白，是由零或多个空格符（space U+0020）、制表符（tab U+0009）、换行符（LF U+000A）、回车符（CR U+000D）所组成。
 */
-void read_blank_first ( const char **c );
-json_error json_parse_null(const char *c,json_value *v);
-json_error read_value(const char *c,json_value *v);
-json_error json_parse_true(const char *c,json_value *v);
-json_error json_parse_false(const char *c,json_value *v);
-/*解析!int可以改个名字*/
+/*json结构体*/
+typedef struct {
+    const char* json;
+}json_struct;
+/*解析*/
+json_error json_parse(json_value *v,const char *json);
+json_type json_get_type ( const json_value *v );
+void read_blank_first (json_struct *c );
+json_error json_parse_null(json_struct *c,json_value *v);
+json_error read_value(json_struct *c,json_value *v);
+json_error json_parse_true(json_struct *c,json_value *v);
+json_error json_parse_false(json_struct *c,json_value *v);
+/*解析*/
 json_error json_parse(json_value *v,const char *json)
 {
-	const char *c = json;
+	json_struct c;
+	c.json = json;
 	assert(v!=NULL);
 	v->type = JSON_NULL;
 	/*读空格*/
 	read_blank_first(&c);
 	/*读值*/
-	return read_value(c,v);	
+	return read_value(&c,v);	
+}
+/*获取类型*/
+json_type json_get_type ( const json_value *v )
+{
+	assert ( v != NULL );
+	return v->type;
 }
 
-json_error json_parse_null(const char *c,json_value *v)
+json_error json_parse_null(json_struct *c,json_value *v)
 {
 	/*再检查一遍c是否为n?有必要？*/
-	assert(*c=='n');
-	if(c[1]!='u'||c[2]!='l'||c[3]!='l')
+	assert(*c->json=='n');
+	if(c->json[1]!='u'||c->json[2]!='l'||c->json[3]!='l')
 		return JSON_INPUT_ERROR;
-	c+=4;
+	c->json+=4;
 	v->type = JSON_NULL;
 	return JSON_OK;
 }
 
-json_error json_parse_true(const char *c,json_value *v)
+json_error json_parse_true(json_struct *c,json_value *v)
 {
 	/*再检查一遍c是否为n?有必要？*/
-	assert(*c=='t');
-	if(c[1]!='u'||c[2]!='r'||c[3]!='e')
+	assert(*c->json=='t');
+	if(c->json[1]!='u'||c->json[2]!='r'||c->json[3]!='e')
 		return JSON_INPUT_ERROR;
-	c+=4;
-	v->type = JSON_NULL;
+	c->json+=4;
+	v->type = JSON_TRUE;
 	return JSON_OK;
 }
 
-json_error json_parse_false(const char *c,json_value *v)
+json_error json_parse_false(json_struct *c,json_value *v)
 {
 	/*再检查一遍c是否为n?有必要？*/
-	assert(*c=='f');
-	if(c[1]!='a'||c[2]!='l'||c[3]!='s'||c[4]!='e')
+	assert(*c->json=='f');
+	if(c->json[1]!='a'||c->json[2]!='l'||c->json[3]!='s'||c->json[4]!='e')
 		return JSON_INPUT_ERROR;
-	c+=5;
-	v->type = JSON_NULL;
+	c->json+=5;
+	v->type = JSON_FALSE;
 	return JSON_OK;
 }
 
 /*读空格*/
-json_error read_value(const char *c,json_value *v)
+json_error read_value(json_struct *c,json_value *v)
 {
-	switch(*c)
+	switch(*c->json)
 	{
 		case 'n':	return json_parse_null(c,v);
 		case 't':   return json_parse_true(c,v);
@@ -75,15 +89,11 @@ json_error read_value(const char *c,json_value *v)
 		default : 	return JSON_INPUT_ERROR;
 	}
 }
-void read_blank_first ( const char **c )
+void read_blank_first (json_struct *c )
 {
-	while ( **c == ' ' || **c == '\t' || **c == '\n' || **c == '\r' )
-		*c = ( void * ) ( *c + 1 );
+	const char* temp = c->json;
+	while ( *temp == ' ' || *temp == '\t' || *temp == '\n' || *temp == '\r' )
+		temp ++;
+	c->json = temp;
 }
 
-/*获取类型用来检验*/
-json_type json_get_type ( const json_value *v )
-{
-	assert ( v != NULL );
-	return v->type;
-}
