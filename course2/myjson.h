@@ -2,7 +2,7 @@
 #define MYJSON_H__
 /*json的几种数据类型*/
 typedef enum{
-	JSON_NULL,JSON_TRUE,JSON_FALSE
+	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER
 } json_type;
 
 /* json结构体 */

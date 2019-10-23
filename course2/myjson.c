@@ -1,4 +1,4 @@
-#include "myjson.h"
+﻿#include "myjson.h"
 #include <assert.h>
 #include <stdlib.h>
 /*JSON格式
@@ -16,45 +16,10 @@
 /*json结构体*/
 typedef struct {
     const char* json;
+	double n;
 }json_struct;
-/*解析*/
-json_error json_parse(json_value *v,const char *json);
-json_type json_get_type ( const json_value *v );
-void read_blank_first (json_struct *c );
-json_error json_parse_null(json_struct *c,json_value *v);
-json_error read_value(json_struct *c,json_value *v);
-json_error json_parse_true(json_struct *c,json_value *v);
-json_error json_parse_false(json_struct *c,json_value *v);
-/*解析*/
-json_error json_parse(json_value *v,const char *json)
-{
-	json_struct c;
-	json_error temp;
-	c.json = json;
-	assert(v!=NULL);
-	v->type = JSON_NULL;
-	/*读空格*/
-	read_blank_first(&c);
-	/*读值*/
-	if((temp = read_value(&c,v))==JSON_OK)
-	{
-		read_blank_first(&c);
-		if(*c.json!='\0')
-		{
-			return JSON_INPUT_ERROR;
-		}
-	}	
 
-	return temp;
-}
-/*获取类型*/
-json_type json_get_type ( const json_value *v )
-{
-	assert ( v != NULL );
-	return v->type;
-}
-
-json_error json_parse_null(json_struct *c,json_value *v)
+static json_error json_parse_null(json_struct *c,json_value *v)
 {
 	/*再检查一遍c是否为n?有必要？*/
 	assert(*c->json=='n');
@@ -65,7 +30,7 @@ json_error json_parse_null(json_struct *c,json_value *v)
 	return JSON_OK;
 }
 
-json_error json_parse_true(json_struct *c,json_value *v)
+static json_error json_parse_true ( json_struct *c , json_value *v )
 {
 	/*再检查一遍c是否为n?有必要？*/
 	assert(*c->json=='t');
@@ -76,7 +41,7 @@ json_error json_parse_true(json_struct *c,json_value *v)
 	return JSON_OK;
 }
 
-json_error json_parse_false(json_struct *c,json_value *v)
+static json_error json_parse_false ( json_struct *c , json_value *v )
 {
 	/*再检查一遍c是否为n?有必要？*/
 	assert(*c->json=='f');
@@ -88,7 +53,7 @@ json_error json_parse_false(json_struct *c,json_value *v)
 }
 
 /*读空格*/
-json_error read_value(json_struct *c,json_value *v)
+static json_error read_value ( json_struct *c , json_value *v )
 {
 	switch(*c->json)
 	{
@@ -99,7 +64,7 @@ json_error read_value(json_struct *c,json_value *v)
 		default : 	return JSON_INPUT_ERROR;
 	}
 }
-void read_blank_first (json_struct *c )
+static void read_blank_first ( json_struct *c )
 {
 	const char* temp = c->json;
 	while ( *temp == ' ' || *temp == '\t' || *temp == '\n' || *temp == '\r' )
@@ -107,3 +72,31 @@ void read_blank_first (json_struct *c )
 	c->json = temp;
 }
 
+/*解析*/
+json_error json_parse ( json_value *v , const char *json )
+{
+	json_struct c;
+	json_error temp;
+	c.json = json;
+	assert ( v != NULL );
+	v->type = JSON_NULL;
+	/*读空格*/
+	read_blank_first ( &c );
+	/*读值*/
+	if ( ( temp = read_value ( &c , v ) ) == JSON_OK )
+	{
+		read_blank_first ( &c );
+		if ( *c.json != '\0' )
+		{
+			return JSON_INPUT_ERROR;
+		}
+	}
+
+	return temp;
+}
+/*获取类型*/
+json_type json_get_type ( const json_value *v )
+{
+	assert ( v != NULL );
+	return v->type;
+}
