@@ -16,7 +16,6 @@
 /*json结构体*/
 typedef struct {
     const char* json;
-	double n;
 }json_struct;
 
 static json_error json_parse_null(json_struct *c,json_value *v)
@@ -51,6 +50,17 @@ static json_error json_parse_false ( json_struct *c , json_value *v )
 	v->type = JSON_FALSE;
 	return JSON_OK;
 }
+static json_error read_number ( json_struct *c , json_value *v )
+{
+	char* other;
+	/* \TODO validate number */
+	v->number = strtod ( c->json , &other );
+	if ( c->json == other )
+		return JSON_VALUE_ERROR;
+	c->json = other;
+	v->type = JSON_NUMBER;
+	return JSON_OK;
+}
 
 /*读空格*/
 static json_error read_value ( json_struct *c , json_value *v )
@@ -61,7 +71,7 @@ static json_error read_value ( json_struct *c , json_value *v )
 		case 't':   return json_parse_true(c,v);
         case 'f':   return json_parse_false(c,v);
 		case '\0': 	return JSON_ONLY_BLANK;
-		default : 	return JSON_INPUT_ERROR;
+		default : 	return read_number(c,v);
 	}
 }
 static void read_blank_first ( json_struct *c )
@@ -72,6 +82,7 @@ static void read_blank_first ( json_struct *c )
 	c->json = temp;
 }
 
+
 /*解析*/
 json_error json_parse ( json_value *v , const char *json )
 {
@@ -79,7 +90,6 @@ json_error json_parse ( json_value *v , const char *json )
 	json_error temp;
 	c.json = json;
 	assert ( v != NULL );
-	v->type = JSON_NULL;
 	/*读空格*/
 	read_blank_first ( &c );
 	/*读值*/
@@ -88,10 +98,10 @@ json_error json_parse ( json_value *v , const char *json )
 		read_blank_first ( &c );
 		if ( *c.json != '\0' )
 		{
+			v->type = JSON_NULL;
 			return JSON_INPUT_ERROR;
 		}
 	}
-
 	return temp;
 }
 /*获取类型*/
@@ -99,4 +109,10 @@ json_type json_get_type ( const json_value *v )
 {
 	assert ( v != NULL );
 	return v->type;
+}
+/*获取数字*/
+double json_get_number ( const json_value *v )
+{
+	assert ( v != NULL && ( v->type == JSON_NUMBER ) );
+	return v->number;
 }
