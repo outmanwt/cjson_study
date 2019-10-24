@@ -50,6 +50,24 @@ static json_error json_parse_false ( json_struct *c , json_value *v )
 	v->type = JSON_FALSE;
 	return JSON_OK;
 }
+static json_error json_parse_literal ( json_struct *c , json_value *v ,const char *literal ,json_type type)
+{
+	size_t i;
+	/*再检查一遍c是否为n?有必要？*/
+	assert(c->json[0]==literal[0]);
+	for ( i = 0; literal[ i + 1 ] != '\0'; i++ )
+	{
+		if ( c->json[ i ] != literal[ i ] )
+			return JSON_INPUT_ERROR;
+	}
+
+	c->json+=i+1;
+	v->type = type;
+	return JSON_OK;
+}
+#define	NUM09(ch) ((ch) >= '0' && (ch) <= '9')
+#define	NUM19(ch) ((ch) >= '1' && (ch) <= '9')
+
 static json_error read_number ( json_struct *c , json_value *v )
 {
 	char* other;
@@ -67,9 +85,9 @@ static json_error read_value ( json_struct *c , json_value *v )
 {
 	switch(*c->json)
 	{
-		case 'n':	return json_parse_null(c,v);
-		case 't':   return json_parse_true(c,v);
-        case 'f':   return json_parse_false(c,v);
+		case 'n':	return json_parse_literal(c,v,"null",JSON_NULL);
+		case 't':   return json_parse_literal ( c , v , "true" , JSON_TRUE );
+		case 'f':   return json_parse_literal ( c , v , "false" , JSON_FALSE );
 		case '\0': 	return JSON_ONLY_BLANK;
 		default : 	return read_number(c,v);
 	}
