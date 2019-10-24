@@ -5,7 +5,7 @@
 int static test_count = 0;
 int static err_count = 0;
 int static test_pass = 0;
-static char *str_err[]= {"JSON_OK","JSON_ONLY_BLANK","JSON_INPUT_ERROR","JSON_VALUE_ERROR"};
+static char *str_err[]= {"JSON_OK","JSON_ONLY_BLANK","JSON_INPUT_ERROR","JSON_INPUT_NUMBER_TOO_BIG"};
 static char *str_type[]= {"JSON_NULL","JSON_TRUE","JSON_FALSE"};
 #define EXPECT_EQ(equality, expect, actual, format) \
     do {\
@@ -56,23 +56,38 @@ static void test_parse_number() {
     TEST_NUMBER(1.234E+10, "1.234E+10");
     TEST_NUMBER(1.234E-10, "1.234E-10");
     TEST_NUMBER(0.0, "1e-10000"); /* must underflow */
+	TEST_NUMBER(1.0000000000000002, "1.0000000000000002"); /* the smallest number > 1 */
+	TEST_NUMBER( 4.9406564584124654e-324, "4.9406564584124654e-324"); /* minimum denormal */
+	TEST_NUMBER(-4.9406564584124654e-324, "-4.9406564584124654e-324");
+	TEST_NUMBER( 2.2250738585072009e-308, "2.2250738585072009e-308");  /* Max subnormal double */
+	TEST_NUMBER(-2.2250738585072009e-308, "-2.2250738585072009e-308");
+	TEST_NUMBER( 2.2250738585072014e-308, "2.2250738585072014e-308");  /* Min normal positive double */
+	TEST_NUMBER(-2.2250738585072014e-308, "-2.2250738585072014e-308");
+	TEST_NUMBER( 1.7976931348623157e+308, "1.7976931348623157e+308");  /* Max double */
+	TEST_NUMBER(-1.7976931348623157e+308, "-1.7976931348623157e+308");
 }	
 static void test_parse_expect_value() {
     TEST_ERROR(JSON_ONLY_BLANK, "");
     TEST_ERROR(JSON_ONLY_BLANK, " ");
 
-	TEST_ERROR(JSON_VALUE_ERROR, "?");
+	TEST_ERROR(JSON_INPUT_ERROR, "?");
 	TEST_ERROR(JSON_INPUT_ERROR, " true?");
-
-#if 0
-	TEST_ERROR ( JSON_VALUE_ERROR , "+0" );
-    TEST_ERROR(JSON_VALUE_ERROR, "+1");
-    TEST_ERROR(JSON_VALUE_ERROR, ".123"); /* at least one digit before '.' */
+    TEST_ERROR(JSON_INPUT_ERROR, "0123"); /* after zero should be '.' , 'E' , 'e' or nothing */
+    TEST_ERROR(JSON_INPUT_ERROR, "0x0");
+    TEST_ERROR(JSON_INPUT_ERROR, "0x123");
+#if 1
+	TEST_ERROR ( JSON_INPUT_ERROR , "+0" );
+    TEST_ERROR(JSON_INPUT_ERROR, "+1");
+    TEST_ERROR(JSON_INPUT_ERROR, ".123"); /* at least one digit before '.' */
     TEST_ERROR(JSON_INPUT_ERROR, "1.");   /* at least one digit after '.' */
-    TEST_ERROR(JSON_VALUE_ERROR, "INF");
-    TEST_ERROR(JSON_VALUE_ERROR, "inf");
-    TEST_ERROR(JSON_VALUE_ERROR, "NAN");
+    TEST_ERROR(JSON_INPUT_ERROR, "INF");
+    TEST_ERROR(JSON_INPUT_ERROR, "inf");
+    TEST_ERROR(JSON_INPUT_ERROR, "NAN");
     TEST_ERROR(JSON_INPUT_ERROR, "nan");
+	    /* invalid number */
+	TEST_ERROR ( JSON_INPUT_ERROR , "0123" ); /* after zero should be '.' , 'E' , 'e' or nothing */
+	TEST_ERROR ( JSON_INPUT_ERROR , "0x0" );
+	TEST_ERROR ( JSON_INPUT_ERROR , "0x123" );
 #endif
 }
 static void null_test()

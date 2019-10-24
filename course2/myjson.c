@@ -1,6 +1,8 @@
 ﻿#include "myjson.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <errno.h>   /* errno, ERANGE */
+#include <math.h>
 /*JSON格式
 	JSON-text = ws value ws
 	ws = *(%x20 / %x09 / %x0A / %x0D) 	
@@ -70,13 +72,43 @@ static json_error json_parse_literal ( json_struct *c , json_value *v ,const cha
 
 static json_error read_number ( json_struct *c , json_value *v )
 {
-	char* other;
-	/* \TODO validate number */
-	v->number = strtod ( c->json , &other );
-	if ( c->json == other )
-		return JSON_VALUE_ERROR;
-	c->json = other;
+#if 0
+	number = [ "-" ] int[ frac ][ exp ]
+	int = "0" / digit1 - 9 * digit
+	frac = "." 1 * digit
+	exp = ( "e" / "E" )[ "-" / "+" ] 1 * digit
+#endif
+	const char* p = c->json;
+	if ( p[0] == '-' )	p++;
+	if ( p[0] == '0' )	p++;
+	else
+	{
+		if ( !NUM19 ( p[ 0 ] ) )
+			return JSON_INPUT_ERROR;
+		for ( p++; NUM09 ( p[ 0 ] ); p++ );
+	}
+	if ( p[0] == '.' )
+	{
+		p++;
+		if ( !NUM09 ( p[ 0 ] ) )
+			return JSON_INPUT_ERROR;
+		for ( p++; NUM09 ( p[ 0 ] ); p++ );
+	}
+	if ( p[ 0 ] == 'e' || p[ 0 ] == 'E' )
+	{
+		p++;
+		if ( p[ 0 ] == '+' || p[ 0 ] == '-' )
+			p++;
+		if ( !NUM09 ( p[ 0 ] ) )
+			return JSON_INPUT_ERROR;
+		for ( p++; NUM09 ( p[ 0 ] ); p++ );
+	}
+	errno = 0;
+	v->number = strtod ( c->json , NULL );
+	if ( errno == ERANGE && ( v->number == HUGE_VAL || v->number == -HUGE_VAL ) )
+		return JSON_INPUT_NUMBER_TOO_BIG;
 	v->type = JSON_NUMBER;
+	c->json = p;
 	return JSON_OK;
 }
 
@@ -104,6 +136,7 @@ static void read_blank_first ( json_struct *c )
 /*解析*/
 json_error json_parse ( json_value *v , const char *json )
 {
+
 	json_struct c;
 	json_error temp;
 	c.json = json;
