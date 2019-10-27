@@ -7,8 +7,16 @@ typedef enum{
 
 /* json结构体 */
 typedef struct {
+	union{
+		double number;
+		struct s
+		{
+			char *str;
+			size_t length;
+		};
+	}u;
     json_type type;
-	double number;
+
 } json_value;
 
 /*现有一个char的json字符串需要解析，返回结果，先写结果类型*/
