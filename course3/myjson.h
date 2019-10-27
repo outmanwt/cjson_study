@@ -2,7 +2,7 @@
 #define MYJSON_H__
 /*json的几种数据类型*/
 typedef enum{
-	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER
+	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING
 } json_type;
 
 /* json结构体 */
@@ -27,4 +27,10 @@ json_type json_get_type(const json_value *v);
 
 /*获取数字用来检验*/
 double json_get_number(const json_value *v);
+void json_set_number ( json_value *v ,double n);
+
+int json_get_boolean ( const json_value * v);
+void json_set_boolean ( json_value *v , int b );
+
+void json_free (json_value *v); 
 #endif 

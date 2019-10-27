@@ -122,6 +122,11 @@ json_error json_parse ( json_value *v , const char *json )
 	}
 	return temp;
 }
+void json_free ( json_value *v )
+{
+	assert ( v != NULL );
+	v->type = JSON_NULL;
+}
 /*获取类型*/
 json_type json_get_type ( const json_value *v )
 {
@@ -133,4 +138,23 @@ double json_get_number ( const json_value *v )
 {
 	assert ( v != NULL && ( v->type == JSON_NUMBER ) );
 	return v->number;
+}
+
+void json_set_number ( json_value *v , double n)
+{
+	json_free ( v );
+	v->number = n;
+	v->type = JSON_NUMBER;
+}
+
+int json_get_boolean ( const json_value * v )
+{
+	assert ( v != NULL && ( v->type == JSON_FALSE || v->type == JSON_TRUE ) );
+	return v->type == JSON_TRUE;
+}
+
+void json_set_boolean ( json_value *v , int b )
+{
+	json_free ( v );
+	v->type = b ? JSON_TRUE : JSON_FALSE;
 }
