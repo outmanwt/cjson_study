@@ -9,11 +9,11 @@ typedef enum{
 typedef struct {
 	union{
 		double number;
-		struct s
+		struct 
 		{
 			char *str;
 			size_t length;
-		};
+		}s;
 	}u;
     json_type type;
 
@@ -39,6 +39,10 @@ void json_set_number ( json_value *v ,double n);
 
 int json_get_boolean ( const json_value * v);
 void json_set_boolean ( json_value *v , int b );
+
+void json_set_string ( json_value *v , const char * c, size_t len );
+const char * json_get_string ( json_value *v );
+const size_t json_get_string_length ( json_value *v );
 
 void json_free (json_value *v); 
 #endif 

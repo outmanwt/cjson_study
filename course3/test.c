@@ -114,7 +114,25 @@ static void false_test()
 	/*解析类型是否相等*/
 	EXPECT_EQ_TYPE(JSON_FALSE,json_get_type(&v));
 }
+#define IS_STRING(expect,actual,len)	EXPECT_EQ((memcmp(expect,actual,len)==0&&sizeof(expect)-1==len), expect, actual, "%s")
 
+#define STRING_TEST(expect, json)\
+    do {\
+        json_value v;\
+        v.type = JSON_NULL;\
+		EXPECT_EQ_ERROR(JSON_OK,json_parse(&v,json));\
+		EXPECT_EQ_TYPE(JSON_STRING,json_get_type(&v));\
+        IS_STRING(expect, json_get_string(&v), json_get_string_length(&v));\
+        json_free(&v);\
+	    } while(0)
+
+static void test_parse_string ()
+{
+	STRING_TEST ( "" , "\"\"" );
+	STRING_TEST ( "Hello" , "\"Hello\"" );
+	STRING_TEST ( "Hello\nWorld" , "\"Hello\\nWorld\"" );
+	STRING_TEST ( "\" \\ / \b \f \n \r \t" , "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"" );
+}
 #define IS_TRUE(actual)		EXPECT_EQ((actual!= 0), "true", "false", "%s")
 #define IS_FALSE(actual)	EXPECT_EQ(actual==0, "false", "true", "%s")
 #define IS_NUMBER(expect,actual)	EXPECT_EQ((expect) == (actual), expect, actual, "%.17g")
@@ -143,6 +161,7 @@ static void parse_test()
 	false_test();
 	test_parse_number();
 	test_parse_expect_value();
+	test_parse_string ();
 
 	test_access_boolean ();
 	test_access_number ();

@@ -1,6 +1,9 @@
 ﻿#include "myjson.h"
-#include <assert.h>
-#include <stdlib.h>
+#include <assert.h>  /* assert() */
+#include <errno.h>   /* errno, ERANGE */
+#include <math.h>    /* HUGE_VAL */
+#include <stdlib.h>  /* NULL, malloc(), realloc(), free(), strtod() */
+#include <string.h>  /* memcpy() */
 /*JSON格式
 	JSON-text = ws value ws
 	ws = *(%x20 / %x09 / %x0A / %x0D)
@@ -85,9 +88,41 @@ static json_error json_parse_literal ( json_struct *c , json_value *v , const ch
 	quotation - mark = %x22; "
 	unescaped = %x20 - 21 / %x23 - 5B / %x5D - 10FFFF
 #endif
+void json_set_string ( json_value *v , const char * c, size_t len )
+{
+	assert ( v != NULL &&(c!=NULL||len==0));
+	json_free ( v );
+	v->u.s.str = ( char* ) malloc ( len + 1 );
+	memcpy ( v->u.s.str , c , len );
+	v->u.s.str[ len ] = '\0';
+	v->u.s.length = len;
+	v->type = JSON_STRING;
+}
+
+	static void* josn_strack_pop ( json_struct *c , size_t	len )
+	{
+		assert ( c->top >= len );
+		return c->stack + ( c->top -= len );
+	}
+#define INIT_SIZE 256
+	static void json_strack_push ( json_struct *c ,  char s )
+	{
+		size_t size = sizeof ( char );
+		if ( c->size <= c->top + size )
+		{
+			if (( c->size )==0)
+				c->size = 256;
+
+			while ( c->top + size >= c->size )
+				c->size += c->size>>1;
+			c->stack = ( char * ) realloc ( c->stack , c->size );
+		}
+		*((char * ) (c->stack + c->top)) = s;
+		c->top += size;
+	}
 static json_error json_parse_string ( json_struct *c , json_value *v )
 {
-	int head = c->top , len;
+	size_t head = c->top , len;
 	const char * p;
 	assert ( *c->json == '\"' ); c->json++;/*跳过开头"*/
 	p = c->json;
@@ -99,7 +134,7 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
 			case'\"': /*结束"*/
 				/*记录长度(top-head)，将值拷贝至v,移动c*/
 				len = c->top - head;
-				josn_set_string ( v , ( const char * ) josn_strack_pop ( c , len ) , len );
+				json_set_string ( v , ( const char * ) josn_strack_pop ( c , len ) , len );
 				c->json = p;
 				return JSON_OK;
 			case'\\':/*转义符*/
@@ -174,8 +209,11 @@ json_error json_parse ( json_value *v , const char *json )
 {
 	json_struct c;
 	json_error temp;
-	c.json = json;
 	assert ( v != NULL );
+	c.json = json;
+	c.stack = NULL;
+	c.size = c.top = 0;
+	v->type = JSON_NULL;
 	/*读空格*/
 	read_blank_first ( &c );
 	/*读值*/
@@ -193,6 +231,10 @@ json_error json_parse ( json_value *v , const char *json )
 void json_free ( json_value *v )
 {
 	assert ( v != NULL );
+	if ( v->type == JSON_STRING )
+	{
+		free ( v->u.s.str );
+	}
 	v->type = JSON_NULL;
 }
 /*获取类型*/
@@ -225,4 +267,14 @@ void json_set_boolean ( json_value *v , int b )
 {
 	json_free ( v );
 	v->type = b ? JSON_TRUE : JSON_FALSE;
+}
+const char * json_get_string ( json_value *v )
+{
+	assert ( v != NULL&&v->type == JSON_STRING );
+	return v->u.s.str;
+}
+const size_t json_get_string_length ( json_value *v )
+{
+	assert ( v != NULL&&v->type == JSON_STRING );
+	return v->u.s.length;
 }
