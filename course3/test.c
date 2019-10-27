@@ -186,11 +186,6 @@ static void parse_test()
 }
 int main() 
 {
-#ifdef _WINDOWS
-	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-	
-#endif
-	//_CrtSetBreakAlloc ( 83 );
 	parse_test();
 	printf("%d/%d (%3.2f%%) passed\n", test_pass, test_count, test_pass * 100.0 / test_count);
 	return 0;

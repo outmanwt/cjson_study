@@ -1,9 +1,5 @@
 ﻿#include "myjson.h"
-#include <assert.h>  /* assert() */
-#include <errno.h>   /* errno, ERANGE */
-#include <math.h>    /* HUGE_VAL */
-#include <stdlib.h>  /* NULL, malloc(), realloc(), free(), strtod() */
-#include <string.h>  /* memcpy() */
+
 /*JSON格式
 	JSON-text = ws value ws
 	ws = *(%x20 / %x09 / %x0A / %x0D)

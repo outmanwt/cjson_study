@@ -1,6 +1,12 @@
 ﻿#ifndef MYJSON_H__
 #define MYJSON_H__
 /*json的几种数据类型*/
+#include <assert.h>  /* assert() */
+#include <errno.h>   /* errno, ERANGE */
+#include <math.h>    /* HUGE_VAL */
+#include <stdlib.h>  /* NULL, malloc(), realloc(), free(), strtod() */
+#include <string.h>  /* memcpy() */
+#include <stddef.h> 
 typedef enum{
 	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING
 } json_type;
