@@ -99,27 +99,26 @@ void json_set_string ( json_value *v , const char * c, size_t len )
 	v->type = JSON_STRING;
 }
 
-	static void* josn_strack_pop ( json_struct *c , size_t	len )
-	{
-		assert ( c->top >= len );
-		return c->stack + ( c->top -= len );
-	}
+static void* josn_strack_pop ( json_struct *c , size_t	len )
+{
+	assert ( c->top >= len );
+	return c->stack + ( c->top -= len );
+}
 #define INIT_SIZE 256
-	static void json_strack_push ( json_struct *c ,  char s )
+static void json_strack_push ( json_struct *c ,  char s )
+{
+	size_t size = sizeof ( char );
+	if ( c->size <= c->top + size )
 	{
-		size_t size = sizeof ( char );
-		if ( c->size <= c->top + size )
-		{
-			if (( c->size )==0)
-				c->size = 256;
-
-			while ( c->top + size >= c->size )
-				c->size += c->size>>1;
-			c->stack = ( char * ) realloc ( c->stack , c->size );
-		}
-		*((char * ) (c->stack + c->top)) = s;
-		c->top += size;
+		if (( c->size )==0)
+			c->size = 256;
+		while ( c->top + size >= c->size )
+			c->size += c->size>>1;
+		c->stack = ( char * ) realloc ( c->stack , c->size );
 	}
+	*((char * ) (c->stack + c->top)) = s;
+	c->top += size;
+}
 static json_error json_parse_string ( json_struct *c , json_value *v )
 {
 	size_t head = c->top , len;
@@ -226,6 +225,8 @@ json_error json_parse ( json_value *v , const char *json )
 			return JSON_INPUT_ERROR;
 		}
 	}
+	assert ( c.top == 0 );
+	free ( c.stack );
 	return temp;
 }
 void json_free ( json_value *v )

@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "myjson.h"
+#ifdef _WINDOWS
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
 int static test_count = 0;
 int static err_count = 0;
 int static test_pass = 0;
@@ -154,6 +158,19 @@ static void test_access_number ()
 	json_set_number ( &v , 1 );
 	IS_NUMBER ( 1.0,json_get_number ( &v ) );
 }
+static void test_json_invalid_string_escape ()
+{
+	TEST_ERROR ( JSON_INPUT_ERROR , "\"\\v\"" );
+	TEST_ERROR ( JSON_INPUT_ERROR , "\"\\'\"" );
+	TEST_ERROR ( JSON_INPUT_ERROR , "\"\\0\"" );
+	TEST_ERROR ( JSON_INPUT_ERROR , "\"\\x12\"" );
+}
+
+static void test_parse_invalid_string_char ()
+{
+	TEST_ERROR ( JSON_INPUT_ERROR , "\"\x01\"" );
+	TEST_ERROR ( JSON_INPUT_ERROR , "\"\x1F\"" );
+}
 static void parse_test()
 {
 	null_test();
@@ -165,9 +182,15 @@ static void parse_test()
 
 	test_access_boolean ();
 	test_access_number ();
+	test_json_invalid_string_escape ();
 }
 int main() 
 {
+#ifdef _WINDOWS
+	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+	
+#endif
+	//_CrtSetBreakAlloc ( 83 );
 	parse_test();
 	printf("%d/%d (%3.2f%%) passed\n", test_pass, test_count, test_pass * 100.0 / test_count);
 	return 0;
