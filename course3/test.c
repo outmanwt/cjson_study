@@ -9,7 +9,7 @@
 int static test_count = 0;
 int static err_count = 0;
 int static test_pass = 0;
-static char *str_err[]= {"JSON_OK","JSON_ONLY_BLANK","JSON_INPUT_ERROR","JSON_VALUE_ERROR"};
+static char *str_err[ ] = { "JSON_OK" , "JSON_ONLY_BLANK" , "JSON_INPUT_ERROR" , "JSON_VALUE_ERROR" , "JSON_INVALID_UNICODE" };
 static char *str_type[]= {"JSON_NULL","JSON_TRUE","JSON_FALSE"};
 #define EXPECT_EQ(equality, expect, actual, format) \
     do {\

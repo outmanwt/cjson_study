@@ -19,38 +19,6 @@ typedef struct {
 	size_t size , top;
 }json_struct;
 
-static json_error json_parse_null ( json_struct *c , json_value *v )
-{
-	/*再检查一遍c是否为n?有必要？*/
-	assert ( *c->json == 'n' );
-	if ( c->json[ 1 ] != 'u' || c->json[ 2 ] != 'l' || c->json[ 3 ] != 'l' )
-		return JSON_INPUT_ERROR;
-	c->json += 4;
-	v->type = JSON_NULL;
-	return JSON_OK;
-}
-
-static json_error json_parse_true ( json_struct *c , json_value *v )
-{
-	/*再检查一遍c是否为n?有必要？*/
-	assert ( *c->json == 't' );
-	if ( c->json[ 1 ] != 'r' || c->json[ 2 ] != 'u' || c->json[ 3 ] != 'e' )
-		return JSON_INPUT_ERROR;
-	c->json += 4;
-	v->type = JSON_TRUE;
-	return JSON_OK;
-}
-
-static json_error json_parse_false ( json_struct *c , json_value *v )
-{
-	/*再检查一遍c是否为n?有必要？*/
-	assert ( *c->json == 'f' );
-	if ( c->json[ 1 ] != 'a' || c->json[ 2 ] != 'l' || c->json[ 3 ] != 's' || c->json[ 4 ] != 'e' )
-		return JSON_INPUT_ERROR;
-	c->json += 5;
-	v->type = JSON_FALSE;
-	return JSON_OK;
-}
 static json_error json_parse_literal ( json_struct *c , json_value *v , const char *literal , json_type type )
 {
 	size_t i;
@@ -115,14 +83,56 @@ static void json_strack_push ( json_struct *c ,  char s )
 	*((char * ) (c->stack + c->top)) = s;
 	c->top += size;
 }
+#define STRING_ERROR(str)	do{c->top = head; return str;}while(0)
+const char* json_parse_hex4 ( const char* p , unsigned* u )
+{
+	int i;		
+	char ch;
+	*u = 0;
+	for (  i = 0; i < 4; i++ )
+	{
+		ch = *p++;
+		*u <<= 4;
+		if ( ch >= '0'&&ch <= '9' )	*u |= ch - '0';
+		else if ( ch >= 'A'&&ch <= 'F' )	*u |= ch - ('A' - 10);
+		else if ( ch >= 'a'&&ch <= 'f' )	*u |= ch - ( 'a' - 10 );
+		else return NULL;
+	}
+	return p;
+}
+static void json_encode_utf8 ( json_struct *c , const unsigned u )
+{
+	if ( u <= 0x7F )
+		json_strack_push ( c , u );
+	else if ( u <= 0x7FF )
+	{/*这种情况下最多11位二进制，其中后6位二进制肯定要给第二个字节110xxxxx	10xxxxxx*/
+		json_strack_push (c , 0xC0 | ( (u>>6) & 0xFF ));
+		json_strack_push ( c , 0x8 | ( u  & 0x3F ) );
+	}
+	else if ( u <= 0xFFFF )
+	{/*这种情况下最多16位二进制，1110xxxx	10xxxxxx	10xxxxxx*/
+		json_strack_push ( c , 0xE0 | ( ( u >> 12 ) & 0xFF ) );
+		json_strack_push ( c , 0x80 | ( ( u >> 6 )	& 0x3F ) );
+		json_strack_push ( c , 0x80 | (   u			& 0x3F ) );
+	}
+	else
+	{
+		assert ( u <= 0x10FFFF );
+		json_strack_push ( c , 0xF0 | ( ( u >> 18 ) & 0xFF ) );
+		json_strack_push ( c , 0x80 | ( ( u >> 12 )	& 0x3F ) );
+		json_strack_push ( c , 0x80 | ( ( u >> 6 )	& 0x3F ) );
+		json_strack_push ( c , 0x80 | (   u			& 0x3F ) );
+	}
+}
 static json_error json_parse_string ( json_struct *c , json_value *v )
 {
 	size_t head = c->top , len;
 	const char * p;
 	assert ( *c->json == '\"' ); c->json++;/*跳过开头"*/
 	p = c->json;
-	while ( 1 )
+	for ( ;; )
 	{
+		unsigned u;/*存储为码点 u*/
 		char ch = *p++;
 		switch ( ch )
 		{
@@ -136,6 +146,12 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
 				/*跳过转义符，根据后面的值压入栈*/
 				switch ( *p++ )
 				{
+					case 'u':
+						if ( !( p = json_parse_hex4 ( p , &u ) ) )
+							STRING_ERROR ( JSON_INVALID_UNICODE );
+						/* \TODO surrogate handling */
+						json_encode_utf8 ( c , u );
+						break;
 					case '\"':json_strack_push ( c , '\"' ); break;
 					case '\\':json_strack_push ( c , '\\' ); break;
 					case '/':  json_strack_push ( c , '/' ); break;
@@ -145,19 +161,14 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
 					case 'r':  json_strack_push ( c , '\r' ); break;
 					case 't':  json_strack_push ( c , '\t' ); break;
 					default:
-						c->top = head;/*转义符后面错误保证回到开头top*/
-						return JSON_INPUT_ERROR;
+						STRING_ERROR ( JSON_INPUT_ERROR );
 				}                
 				break;
 			case'\0':
-				c->top = head;/*转义符后面错误保证回到开头top*/
-				return JSON_INPUT_ERROR;
+				STRING_ERROR ( JSON_INPUT_ERROR );
 			default:
 				if ( ( unsigned char ) ch < 0x20 ) 
-				{
-					c->top = head;/*转义符后面错误保证回到开头top*/
-					return JSON_INPUT_ERROR;
-				}
+					STRING_ERROR ( JSON_INPUT_ERROR );
 				json_strack_push ( c , ch );
 		}		
 	}
