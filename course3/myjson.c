@@ -106,22 +106,22 @@ static void json_encode_utf8 ( json_struct *c , const unsigned u )
 		json_strack_push ( c , u );
 	else if ( u <= 0x7FF )
 	{/*这种情况下最多11位二进制，其中后6位二进制肯定要给第二个字节110xxxxx	10xxxxxx*/
-		json_strack_push (c , 0xC0 | ( (u>>6) & 0xFF ));
-		json_strack_push ( c , 0x8 | ( u  & 0x3F ) );
+		json_strack_push ( c , 0xC0 | ( ( u >> 6 ) & 0xFF ) );
+		json_strack_push ( c , 0x80 | (    u        & 0x3F ) );
 	}
 	else if ( u <= 0xFFFF )
 	{/*这种情况下最多16位二进制，1110xxxx	10xxxxxx	10xxxxxx*/
 		json_strack_push ( c , 0xE0 | ( ( u >> 12 ) & 0xFF ) );
-		json_strack_push ( c , 0x80 | ( ( u >> 6 )	& 0x3F ) );
-		json_strack_push ( c , 0x80 | (   u			& 0x3F ) );
+		json_strack_push ( c , 0x80 | ( ( u >> 6 )  & 0x3F ) );
+		json_strack_push ( c , 0x80 | (   u         & 0x3F ) );
 	}
 	else
 	{
 		assert ( u <= 0x10FFFF );
 		json_strack_push ( c , 0xF0 | ( ( u >> 18 ) & 0xFF ) );
-		json_strack_push ( c , 0x80 | ( ( u >> 12 )	& 0x3F ) );
-		json_strack_push ( c , 0x80 | ( ( u >> 6 )	& 0x3F ) );
-		json_strack_push ( c , 0x80 | (   u			& 0x3F ) );
+		json_strack_push ( c , 0x80 | ( ( u >> 12 ) & 0x3F ) );
+		json_strack_push ( c , 0x80 | ( ( u >> 6 )  & 0x3F ) );
+		json_strack_push ( c , 0x80 | (   u         & 0x3F ) );
 	}
 }
 static json_error json_parse_string ( json_struct *c , json_value *v )
@@ -132,7 +132,7 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
 	p = c->json;
 	for ( ;; )
 	{
-		unsigned u;/*存储为码点 u*/
+		unsigned u,u2;/*存储为码点 u*/
 		char ch = *p++;
 		switch ( ch )
 		{
@@ -149,7 +149,16 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
 					case 'u':
 						if ( !( p = json_parse_hex4 ( p , &u ) ) )
 							STRING_ERROR ( JSON_INVALID_UNICODE );
-						/* \TODO surrogate handling */
+						if ( u >= 0xD800 && u <= 0xDBFF )  /*有多个代理对*/
+						{
+							if ( ( *p++ != '\\' ) || ( *p++ != 'u' )  )
+								STRING_ERROR ( JSON_INVALID_UNICODE_SURROGATE );
+							if  ( !( p = json_parse_hex4 ( p , &u2 ) ) ) 
+								STRING_ERROR ( JSON_INVALID_UNICODE );
+							if ( u2 < 0xDC00 || u2 > 0xDFFF )
+								STRING_ERROR ( JSON_INVALID_UNICODE_SURROGATE );
+							u = ( ( ( u - 0xD800 ) << 10 ) | ( u2 - 0xDC00 ) ) + 0x10000;
+						}
 						json_encode_utf8 ( c , u );
 						break;
 					case '\"':json_strack_push ( c , '\"' ); break;
@@ -178,13 +187,43 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
 
 static json_error read_number ( json_struct *c , json_value *v )
 {
-	char* other;
-	/* \TODO validate number */
-	v->u.number = strtod ( c->json , &other );
-	if ( c->json == other )
-		return JSON_VALUE_ERROR;
-	c->json = other;
+#if 0
+	number = [ "-" ] int[ frac ][ exp ]
+		int = "0" / digit1 - 9 * digit
+		frac = "." 1 * digit
+		exp = ( "e" / "E" )[ "-" / "+" ] 1 * digit
+#endif
+		const char* p = c->json;
+	if ( p[ 0 ] == '-' )	p++;
+	if ( p[ 0 ] == '0' )	p++;
+	else
+	{
+		if ( !NUM19 ( p[ 0 ] ) )
+			return JSON_VALUE_ERROR;
+		for ( p++; NUM09 ( p[ 0 ] ); p++ );
+	}
+	if ( p[ 0 ] == '.' )
+	{
+		p++;
+		if ( !NUM09 ( p[ 0 ] ) )
+			return JSON_INPUT_ERROR;
+		for ( p++; NUM09 ( p[ 0 ] ); p++ );
+	}
+	if ( p[ 0 ] == 'e' || p[ 0 ] == 'E' )
+	{
+		p++;
+		if ( p[ 0 ] == '+' || p[ 0 ] == '-' )
+			p++;
+		if ( !NUM09 ( p[ 0 ] ) )
+			return JSON_INPUT_ERROR;
+		for ( p++; NUM09 ( p[ 0 ] ); p++ );
+	}
+	errno = 0;
+	v->u.number = strtod ( c->json , NULL );
+	if ( errno == ERANGE && ( v->u.number == HUGE_VAL || v->u.number == -HUGE_VAL ) )
+		return JSON_INPUT_NUMBER_TOO_BIG;
 	v->type = JSON_NUMBER;
+	c->json = p;
 	return JSON_OK;
 }
 

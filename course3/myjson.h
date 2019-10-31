@@ -31,7 +31,9 @@ typedef enum {
 	JSON_ONLY_BLANK,/*""或者" "*/
 	JSON_INPUT_ERROR,/*不和json规矩，空白之后还有值"ture a"语法错误*/
 	JSON_VALUE_ERROR,/*输入值的类型不在范围内*/
-	JSON_INVALID_UNICODE
+	JSON_INPUT_NUMBER_TOO_BIG,
+	JSON_INVALID_UNICODE,
+	JSON_INVALID_UNICODE_SURROGATE
 } json_error;
 
 /*解析!int可以改个名字*/

@@ -9,7 +9,7 @@
 int static test_count = 0;
 int static err_count = 0;
 int static test_pass = 0;
-static char *str_err[ ] = { "JSON_OK" , "JSON_ONLY_BLANK" , "JSON_INPUT_ERROR" , "JSON_VALUE_ERROR" , "JSON_INVALID_UNICODE" };
+static char *str_err[ ] = { "JSON_OK" , "JSON_ONLY_BLANK" , "JSON_INPUT_ERROR" , "JSON_VALUE_ERROR" , "JSON_INPUT_NUMBER_TOO_BIG" , "JSON_INVALID_UNICODE" ,"JSON_INVALID_UNICODE_SURROGATE"};
 static char *str_type[]= {"JSON_NULL","JSON_TRUE","JSON_FALSE"};
 #define EXPECT_EQ(equality, expect, actual, format) \
     do {\
@@ -68,7 +68,7 @@ static void test_parse_expect_value() {
 	TEST_ERROR(JSON_VALUE_ERROR, "?");
 	TEST_ERROR(JSON_INPUT_ERROR, " true?");
 
-#if 0
+#if 1
 	TEST_ERROR ( JSON_VALUE_ERROR , "+0" );
     TEST_ERROR(JSON_VALUE_ERROR, "+1");
     TEST_ERROR(JSON_VALUE_ERROR, ".123"); /* at least one digit before '.' */
@@ -136,6 +136,13 @@ static void test_parse_string ()
 	STRING_TEST ( "Hello" , "\"Hello\"" );
 	STRING_TEST ( "Hello\nWorld" , "\"Hello\\nWorld\"" );
 	STRING_TEST ( "\" \\ / \b \f \n \r \t" , "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"" );
+	STRING_TEST ( "Hello\0World" , "\"Hello\\u0000World\"" );
+	STRING_TEST ( "\x24" , "\"\\u0024\"" );         /* Dollar sign U+0024 */
+	STRING_TEST ( "\xC2\xA2" , "\"\\u00A2\"" );     /* Cents sign U+00A2 */
+	STRING_TEST ( "\xE2\x82\xAC" , "\"\\u20AC\"" ); /* Euro sign U+20AC */
+	STRING_TEST ( "\xF0\x9D\x84\x9E" , "\"\\uD834\\uDD1E\"" );  /* G clef sign U+1D11E */
+	STRING_TEST ( "\xF0\x9D\x84\x9E" , "\"\\ud834\\udd1e\"" );  /* G clef sign U+1D11E */
+
 }
 #define IS_TRUE(actual)		EXPECT_EQ((actual!= 0), "true", "false", "%s")
 #define IS_FALSE(actual)	EXPECT_EQ(actual==0, "false", "true", "%s")
