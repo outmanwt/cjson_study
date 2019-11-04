@@ -59,7 +59,7 @@ char * json_get_string ( json_value *v );
 size_t json_get_string_length ( json_value *v );
 
 size_t json_get_array_size ( json_value *v );
-json_value * json_get_array_element ( json_value *v );
+json_value * json_get_array_element (json_value *v , size_t index);
 
 void json_free (json_value *v); 
 #endif 
