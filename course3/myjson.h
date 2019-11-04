@@ -10,7 +10,7 @@
 typedef enum{
 	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING,JSON_ARRAY
 } json_type;
-typedef json_value json_value;
+typedef struct json_value json_value;
 /* json结构体 */
 struct json_value{
 	union{

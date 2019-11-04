@@ -50,7 +50,7 @@ static json_error json_parse_literal ( json_struct *c , json_value *v , const ch
 	% x75 4HEXDIG ); uXXXX                U + XXXX
 	escape = %x5C; \
 	quotation - mark = %x22; "
-	unescaped = %x20 - 21 / %x23 - 5B / %x5D - 10FFFF
+    unescaped = %x20 - 21 / %x23 - 5B / %x5D - 10FFFF
 #endif
 void json_set_string ( json_value *v , const char * c, size_t len )
 {
@@ -87,15 +87,15 @@ static void json_strack_push ( json_struct *c ,  char s )
 const char* json_parse_hex4 ( const char* p , unsigned* u )
 {
 	int i;		
-	char ch;
+    char ch;
 	*u = 0;
 	for (  i = 0; i < 4; i++ )
 	{
 		ch = *p++;
 		*u <<= 4;
-		if ( ch >= '0'&&ch <= '9' )	*u |= ch - '0';
-		else if ( ch >= 'A'&&ch <= 'F' )	*u |= ch - ('A' - 10);
-		else if ( ch >= 'a'&&ch <= 'f' )	*u |= ch - ( 'a' - 10 );
+        if ( ch >= '0'&&ch <= '9' )	*u |= ch - '0';
+        else if ( ch >= 'A'&&ch <= 'F' )	*u |= ch - ('A' - 10);
+        else if ( ch >= 'a'&&ch <= 'f' )	*u |= ch - ( 'a' - 10 );
 		else return NULL;
 	}
 	return p;
@@ -103,7 +103,7 @@ const char* json_parse_hex4 ( const char* p , unsigned* u )
 static void json_encode_utf8 ( json_struct *c , const unsigned u )
 {
 	if ( u <= 0x7F )
-		json_strack_push ( c , u );
+        json_strack_push ( c , u );
 	else if ( u <= 0x7FF )
 	{/*这种情况下最多11位二进制，其中后6位二进制肯定要给第二个字节110xxxxx	10xxxxxx*/
 		json_strack_push ( c , 0xC0 | ( ( u >> 6 ) & 0xFF ) );
@@ -315,13 +315,13 @@ void json_set_boolean ( json_value *v , int b )
 	json_free ( v );
 	v->type = b ? JSON_TRUE : JSON_FALSE;
 }
-const char * json_get_string ( json_value *v )
+char * json_get_string ( json_value *v )
 {
 	assert ( v != NULL&&v->type == JSON_STRING );
 	return v->u.s.str;
 }
-const size_t json_get_string_length ( json_value *v )
+size_t json_get_string_length ( json_value *v )
 {
-	assert ( v != NULL&&v->type == JSON_STRING );
-	return v->u.s.length;
+    assert ( v != NULL&&v->type == JSON_STRING );
+    return v->u.s.length;
 }
