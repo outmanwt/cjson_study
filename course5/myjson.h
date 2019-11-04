@@ -8,11 +8,11 @@
 #include <string.h>  /* memcpy() */
 #include <stddef.h> 
 typedef enum{
-	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING,JSON_ARRAY
+	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING
 } json_type;
-typedef json_value json_value;
+
 /* json结构体 */
-struct json_value{
+typedef struct {
 	union{
 		double number;
 		struct 
@@ -20,15 +20,10 @@ struct json_value{
 			char *str;
 			size_t length;
 		}s;
-		struct
-		{
-			json_value *e;
-			size_t size;
-		}a;
 	}u;
     json_type type;
 
-} ;
+} json_value;
 
 /*现有一个char的json字符串需要解析，返回结果，先写结果类型*/
 typedef enum {
@@ -55,10 +50,8 @@ int json_get_boolean ( const json_value * v);
 void json_set_boolean ( json_value *v , int b );
 
 void json_set_string ( json_value *v , const char * c, size_t len );
-char * json_get_string ( json_value *v );
-size_t json_get_string_length ( json_value *v );
+const char * json_get_string ( json_value *v );
+const size_t json_get_string_length ( json_value *v );
 
-size_t json_get_array_size ( json_value *v );
-json_value * json_get_array_element ( json_value *v );
 void json_free (json_value *v); 
 #endif 
