@@ -103,7 +103,7 @@ const char* json_parse_hex4 ( const char* p , unsigned* u )
 static void json_encode_utf8 ( json_struct *c , const unsigned u )
 {
 	if ( u <= 0x7F )
-        json_strack_push ( c , u );
+        json_strack_push ( c , (char)u );
 	else if ( u <= 0x7FF )
 	{/*这种情况下最多11位二进制，其中后6位二进制肯定要给第二个字节110xxxxx	10xxxxxx*/
 		json_strack_push ( c , 0xC0 | ( ( u >> 6 ) & 0xFF ) );
@@ -324,4 +324,15 @@ size_t json_get_string_length ( json_value *v )
 {
     assert ( v != NULL&&v->type == JSON_STRING );
     return v->u.s.length;
+}
+size_t json_get_array_size ( json_value *v )
+{
+    assert(v != NULL&&v->type == JSON_ARRAY);
+    return  v->u.a.size;
+}
+json_value * json_get_array_element ( json_value *v,size_t index )
+{
+    assert(v != NULL&&v->type == JSON_ARRAY);
+    assert(index<v->u.a.size);
+    return &v->u.a.e[index];
 }

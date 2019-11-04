@@ -10,7 +10,7 @@ int static test_count = 0;
 int static err_count = 0;
 int static test_pass = 0;
 static char *str_err[ ] = { "JSON_OK" , "JSON_ONLY_BLANK" , "JSON_INPUT_ERROR" , "JSON_VALUE_ERROR" , "JSON_INPUT_NUMBER_TOO_BIG" , "JSON_INVALID_UNICODE" ,"JSON_INVALID_UNICODE_SURROGATE"};
-static char *str_type[]= {"JSON_NULL","JSON_TRUE","JSON_FALSE"};
+static char *str_type[]= {"JSON_NULL","JSON_TRUE","JSON_FALSE","JSON_STRING","JSON_ARRAY"};
 #define EXPECT_EQ(equality, expect, actual, format) \
     do {\
         test_count++;\
@@ -190,6 +190,7 @@ static void parse_test()
 	test_access_boolean ();
 	test_access_number ();
 	test_json_invalid_string_escape ();
+    test_parse_invalid_string_char();
 }
 int main() 
 {

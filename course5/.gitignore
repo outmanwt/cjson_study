@@ -1,3 +1,4 @@
 build
 qt_build
-CMakeLists.txt.user
+*.user
+*.autosave
