@@ -10,7 +10,7 @@ int static test_count = 0;
 int static err_count = 0;
 int static test_pass = 0;
 static char *str_err[ ] = { "JSON_OK" , "JSON_ONLY_BLANK" , "JSON_INPUT_ERROR" , "JSON_VALUE_ERROR" , "JSON_INPUT_NUMBER_TOO_BIG" , "JSON_INVALID_UNICODE" ,"JSON_INVALID_UNICODE_SURROGATE"};
-static char *str_type[]= {"JSON_NULL","JSON_TRUE","JSON_FALSE","JSON_STRING","JSON_ARRAY"};
+static char *str_type[]= {"JSON_NULL","JSON_TRUE","JSON_FALSE","JSON_NUMBER","JSON_STRING","JSON_ARRAY"};
 #define EXPECT_EQ(equality, expect, actual, format) \
     do {\
         test_count++;\
@@ -142,7 +142,28 @@ static void test_parse_string ()
 	STRING_TEST ( "\xE2\x82\xAC" , "\"\\u20AC\"" ); /* Euro sign U+20AC */
 	STRING_TEST ( "\xF0\x9D\x84\x9E" , "\"\\uD834\\uDD1E\"" );  /* G clef sign U+1D11E */
 	STRING_TEST ( "\xF0\x9D\x84\x9E" , "\"\\ud834\\udd1e\"" );  /* G clef sign U+1D11E */
+}
+#if defined(_MSC_VER)
+#define EXPECT_EQ_SIZE_T(expect,actual) EXPECT_EQ((expect==actual),(size_t)expect,(size_t)actual,"%Iu")
+#else
+#define EXPECT_EQ_SIZE_T(expect,actual) EXPECT_EQ((expect==actual),(size_t)expect,(size_t)actual,"%zu")
+#endif
 
+static void test_parse_array ()
+{
+    json_value v;
+    v.type = JSON_NULL;
+    EXPECT_EQ_ERROR(JSON_OK,json_parse(&v,"[ null , false , true , 123 , \"abc\" ]"));
+    EXPECT_EQ_TYPE(JSON_ARRAY,json_get_type(&v));
+    EXPECT_EQ_SIZE_T(5, json_get_array_size(&v));
+    EXPECT_EQ_TYPE(JSON_NULL,json_get_type(json_get_array_element(&v,0)));
+    EXPECT_EQ_TYPE(JSON_FALSE,  json_get_type(json_get_array_element(&v, 1)));
+    EXPECT_EQ_TYPE(JSON_TRUE,   json_get_type(json_get_array_element(&v, 2)));
+    EXPECT_EQ_TYPE(JSON_NUMBER, json_get_type(json_get_array_element(&v, 3)));
+    EXPECT_EQ_TYPE(JSON_STRING, json_get_type(json_get_array_element(&v, 4)));
+    EXPECT_EQ_DOUBLE(123.0, json_get_number(json_get_array_element(&v, 3)));
+    IS_STRING("abc",json_get_string(json_get_array_element(&v, 4)),json_get_string_length(json_get_array_element(&v, 4)));
+    json_free(&v);
 }
 #define IS_TRUE(actual)		EXPECT_EQ((actual!= 0), "true", "false", "%s")
 #define IS_FALSE(actual)	EXPECT_EQ(actual==0, "false", "true", "%s")
@@ -178,6 +199,8 @@ static void test_parse_invalid_string_char ()
 	TEST_ERROR ( JSON_INPUT_ERROR , "\"\x01\"" );
 	TEST_ERROR ( JSON_INPUT_ERROR , "\"\x1F\"" );
 }
+
+
 static void parse_test()
 {
 	null_test();
@@ -191,6 +214,7 @@ static void parse_test()
 	test_access_number ();
 	test_json_invalid_string_escape ();
     test_parse_invalid_string_char();
+    test_parse_array ();
 }
 int main() 
 {
