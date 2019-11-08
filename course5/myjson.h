@@ -6,16 +6,17 @@
 #include <math.h>    /* HUGE_VAL */
 #include <stdlib.h>  /* NULL, malloc(), realloc(), free(), strtod() */
 #include <string.h>  /* memcpy() */
-#include <stddef.h> 
+#include <stddef.h>
 typedef enum{
 	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING,JSON_ARRAY
 } json_type;
+typedef struct json_member json_member
 typedef struct json_value json_value;
 /* json结构体 */
 struct json_value{
 	union{
 		double number;
-		struct 
+		struct
 		{
 			char *str;
 			size_t length;
@@ -25,11 +26,20 @@ struct json_value{
 			json_value *e;
 			size_t size;
 		}a;
+		struct
+		{
+			json_member *m;
+			size_t size;
+		}o;
 	}u;
     json_type type;
-
 } ;
-
+struct json_member
+{
+    char * key_name;
+    json_value v;
+    size_t key_length;
+};
 /*现有一个char的json字符串需要解析，返回结果，先写结果类型*/
 typedef enum {
 	JSON_OK,
@@ -61,5 +71,5 @@ size_t json_get_string_length ( json_value *v );
 size_t json_get_array_size ( json_value *v );
 json_value * json_get_array_element (json_value *v , size_t index);
 
-void json_free (json_value *v); 
-#endif 
+void json_free (json_value *v);
+#endif

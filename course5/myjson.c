@@ -131,9 +131,20 @@ static void json_encode_utf8 ( json_struct *c , const unsigned u )
         PUTC ( c , 0x80 | (   u         & 0x3F ) );
     }
 }
-static json_error json_parse_string ( json_struct *c , json_value *v )
+static json_error json_parse_string( json_struct *c ,json_value *v)
 {
-    size_t head = c->top , len;
+        int ret;
+        char *s;
+        size_t len;
+        if(ret=(json_parse_string_raw(c,&s,&len)==JSON_OK))
+        {
+             json_set_string ( v , ( const char * ) s,len);
+        }
+        return ret;
+}
+static json_error json_parse_string_raw ( json_struct *c , char** str , size_t * len)
+{
+    size_t head = c->top ;
     const char * p;
     assert ( *c->json == '\"' ); c->json++;/*跳过开头"*/
     p = c->json;
@@ -144,10 +155,10 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
         switch ( ch )
         {
         case'\"': /*结束"*/
-            /*记录长度(top-head)，将值拷贝至v,移动c*/
+            /*记录长度(top-head)，将值拷贝至v,移动c */
             len = c->top - head;
-            json_set_string ( v , ( const char * ) josn_strack_pop ( c , len ) , len );
-            c->json = p;
+            *str = josn_strack_pop ( c , *len );
+            c->json = p;e
             return JSON_OK;
         case'\\':/*转义符*/
             /*跳过转义符，根据后面的值压入栈*/
@@ -187,6 +198,18 @@ static json_error json_parse_string ( json_struct *c , json_value *v )
                 STRING_ERROR ( JSON_INPUT_ERROR );
             PUTC ( c , ch );
         }
+    }
+}
+static json_error json_parse_string_raw ( json_struct *c , json_value *v)
+{
+    assert(c->json =='{');  c->json++;
+    read_blank_first(c);
+    if(c->json[]=='}')
+    {
+        c->json++;
+        v->type = JSON_OBJECT;
+        v->u.o.size=0;
+        v->u.o = NULL;
     }
 }
 #define	NUM09(ch) ((ch) >= '0' && (ch) <= '9')
