@@ -8,14 +8,13 @@
 #include <string.h>  /* memcpy() */
 #include <stddef.h>
 typedef enum{
-	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING,JSON_ARRAY
+	JSON_NULL,JSON_TRUE,JSON_FALSE,JSON_NUMBER,JSON_STRING,JSON_ARRAY,JSON_OBJECT
 } json_type;
 typedef struct json_member json_member
 typedef struct json_value json_value;
 /* json结构体 */
 struct json_value{
 	union{
-		double number;
 		struct
 		{
 			char *str;
@@ -31,6 +30,7 @@ struct json_value{
 			json_member *m;
 			size_t size;
 		}o;
+		double number;
 	}u;
     json_type type;
 } ;
@@ -71,5 +71,11 @@ size_t json_get_string_length ( json_value *v );
 size_t json_get_array_size ( json_value *v );
 json_value * json_get_array_element (json_value *v , size_t index);
 
+size_t json_get_object_size(const json_value* v);
+const char* json_get_object_key(const json_value* v, size_t index);
+size_t json_get_object_key_length(const json_value* v, size_t index);
+json_value* json_get_object_value(const json_value* v, size_t index);
+
 void json_free (json_value *v);
+
 #endif

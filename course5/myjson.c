@@ -200,8 +200,10 @@ static json_error json_parse_string_raw ( json_struct *c , char** str , size_t *
         }
     }
 }
-static json_error json_parse_string_raw ( json_struct *c , json_value *v)
+static json_error json_parse_object ( json_struct *c , json_value *v)
 {
+    size_t len;
+    json_member member;
     assert(c->json =='{');  c->json++;
     read_blank_first(c);
     if(c->json[]=='}')
@@ -210,8 +212,62 @@ static json_error json_parse_string_raw ( json_struct *c , json_value *v)
         v->type = JSON_OBJECT;
         v->u.o.size=0;
         v->u.o = NULL;
+		return JSON_OK;
     }
+	for(;;){
+		char *str;
+		member.v = JSON_NULL;
+		if(*c->json != '"'){
+			ret = JSON_INPUT_ERROR;
+			break;
+		}
+		if((ret == json_parse_string_raw(c ,&str ,&member.key_length)!= JSON_OK))
+			break;
+		memcpy(member.key = (char*)malloc(member.key_length+1),str,member.key_length);
+		member.key[member.k_length] = '\0';
+		read_blank_first(c);
+		if(*c->json! = ':'){
+			ret = JSON_INPUT_ERROR;
+			break;
+		}
+		c->json++;
+		read_blank_first(c);
+		if((ret == json_prase(c,&member.v)!=JSON_OK))
+			break;
+		memcpy(josn_strack_pop(c,sizeof(json_member)),&m,sizeof(json_member));
+		size++;
+		member.key = NULL;
+		read_blank_first(c);
+		if(c->json[0]==',')
+		{
+			c->json++;
+			read_blank_first(c);
+		}
+		else if(c->json[0]=='}')
+		{
+			size_t s = sizeof(json_member)*size;
+			c->json++;
+			v->type = JSON_OBJECT;
+			v->u.o.size = size;
+			memcpy(v->.u.o.member = (json_member*)malloc(s),json_stack_pop(c,s),s);
+			return JSON_OK;
+		}
+		else{
+			ret = JOSN_INPUT_ERROR;
+			break;
+		}
+		free(.ember.key);
+		for(i = 0;i<size;i++){
+			json_member* m = (json_member*)json_stack_pop(c,sizeof(json_member));
+			free(m.key);
+			json_free(&m->v);
+		}
+		v->type = JONS_NULL;
+		return ret;
+	} 		
+    return ret;
 }
+
 #define	NUM09(ch) ((ch) >= '0' && (ch) <= '9')
 #define	NUM19(ch) ((ch) >= '1' && (ch) <= '9')
 
