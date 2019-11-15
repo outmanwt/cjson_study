@@ -68,14 +68,14 @@ void json_set_string ( json_value *v , const char * c, size_t len )
     v->type = JSON_STRING;
 }
 
-static void* josn_strack_pop ( json_struct *c , size_t	len )
+static void* json_stack_pop ( json_struct *c , size_t	len )
 {
     assert ( c->top >= len );
     return c->stack + ( c->top -= len );
 }
 #define INIT_SIZE 256
-#define PUTC(c, ch)         do { *(char*)json_strack_push(c, sizeof(char)) = (ch); } while(0)
-static void* json_strack_push ( json_struct *c ,  size_t size )
+#define PUTC(c, ch)         do { *(char*)json_stack_push(c, sizeof(char)) = (ch); } while(0)
+static void* json_stack_push ( json_struct *c ,  size_t size )
 {
     void* ret;
     if ( c->size <= c->top + size )
@@ -131,17 +131,7 @@ static void json_encode_utf8 ( json_struct *c , const unsigned u )
         PUTC ( c , 0x80 | (   u         & 0x3F ) );
     }
 }
-static json_error json_parse_string( json_struct *c ,json_value *v)
-{
-        int ret;
-        char *s;
-        size_t len;
-        if(ret=(json_parse_string_raw(c,&s,&len)==JSON_OK))
-        {
-             json_set_string ( v , ( const char * ) s,len);
-        }
-        return ret;
-}
+
 static json_error json_parse_string_raw ( json_struct *c , char** str , size_t * len)
 {
     size_t head = c->top ;
@@ -156,9 +146,9 @@ static json_error json_parse_string_raw ( json_struct *c , char** str , size_t *
         {
         case'\"': /*结束"*/
             /*记录长度(top-head)，将值拷贝至v,移动c */
-            len = c->top - head;
-            *str = josn_strack_pop ( c , *len );
-            c->json = p;e
+            *len = c->top - head;
+            *str = json_stack_pop ( c , *len );
+            c->json = p;
             return JSON_OK;
         case'\\':/*转义符*/
             /*跳过转义符，根据后面的值压入栈*/
@@ -200,71 +190,15 @@ static json_error json_parse_string_raw ( json_struct *c , char** str , size_t *
         }
     }
 }
-static json_error json_parse_object ( json_struct *c , json_value *v)
+static json_error json_parse_string( json_struct *c ,json_value *v)
 {
+    json_error ret;
+    char *s;
     size_t len;
-    json_member member;
-    assert(c->json =='{');  c->json++;
-    read_blank_first(c);
-    if(c->json[]=='}')
+    if((ret=json_parse_string_raw(c,&s,&len))==JSON_OK)
     {
-        c->json++;
-        v->type = JSON_OBJECT;
-        v->u.o.size=0;
-        v->u.o = NULL;
-		return JSON_OK;
+        json_set_string ( v , ( const char * ) s,len);
     }
-	for(;;){
-		char *str;
-		member.v = JSON_NULL;
-		if(*c->json != '"'){
-			ret = JSON_INPUT_ERROR;
-			break;
-		}
-		if((ret == json_parse_string_raw(c ,&str ,&member.key_length)!= JSON_OK))
-			break;
-		memcpy(member.key = (char*)malloc(member.key_length+1),str,member.key_length);
-		member.key[member.k_length] = '\0';
-		read_blank_first(c);
-		if(*c->json! = ':'){
-			ret = JSON_INPUT_ERROR;
-			break;
-		}
-		c->json++;
-		read_blank_first(c);
-		if((ret == json_prase(c,&member.v)!=JSON_OK))
-			break;
-		memcpy(josn_strack_pop(c,sizeof(json_member)),&m,sizeof(json_member));
-		size++;
-		member.key = NULL;
-		read_blank_first(c);
-		if(c->json[0]==',')
-		{
-			c->json++;
-			read_blank_first(c);
-		}
-		else if(c->json[0]=='}')
-		{
-			size_t s = sizeof(json_member)*size;
-			c->json++;
-			v->type = JSON_OBJECT;
-			v->u.o.size = size;
-			memcpy(v->.u.o.member = (json_member*)malloc(s),json_stack_pop(c,s),s);
-			return JSON_OK;
-		}
-		else{
-			ret = JOSN_INPUT_ERROR;
-			break;
-		}
-		free(.ember.key);
-		for(i = 0;i<size;i++){
-			json_member* m = (json_member*)json_stack_pop(c,sizeof(json_member));
-			free(m.key);
-			json_free(&m->v);
-		}
-		v->type = JONS_NULL;
-		return ret;
-	} 		
     return ret;
 }
 
@@ -308,9 +242,78 @@ static json_error read_number ( json_struct *c , json_value *v )
 }
 static json_error read_value ( json_struct *c , json_value *v );
 static void read_blank_first ( json_struct *c );
+static json_error read_value ( json_struct *c , json_value *v );
+static json_error json_parse_object ( json_struct *c , json_value *v)
+{
+    json_error ret;size_t size = 0;size_t i;
+    json_member member;
+    assert(c->json[0]=='{');  c->json++;
+    read_blank_first(c);
+    if(c->json[0]=='}')
+    {
+        c->json++;
+        v->type = JSON_OBJECT;
+        v->u.o.size=0;
+        v->u.a.e = NULL;
+        return JSON_OK;
+    }
+    for(;;){
+        char *str;
+        member.v.type = JSON_NULL;
+        if(*c->json != '"'){
+            ret = JSON_INPUT_ERROR;
+            break;
+        }
+        if((ret = json_parse_string_raw(c ,&str ,&member.key_length))!= JSON_OK)
+            break;
+        memcpy(member.key_name = (char*)malloc(member.key_length+1),str,member.key_length);
+        member.key_name[member.key_length] = '\0';
+        read_blank_first(c);
+        if(*c->json!= ':'){
+            ret = JSON_INPUT_ERROR;
+            break;
+        }
+        c->json++;
+        read_blank_first(c);
+        if((ret == read_value(c,&member.v))!=JSON_OK)
+            break;
+        memcpy(json_stack_pop(c,sizeof(json_member)),&member,sizeof(json_member));
+        size++;
+        member.key_name = NULL;
+        read_blank_first(c);
+        if(c->json[0]==',')
+        {
+            c->json++;
+            read_blank_first(c);
+        }
+        else if(c->json[0]=='}')
+        {
+            size_t s = sizeof(json_member)*size;
+            c->json++;
+            v->type = JSON_OBJECT;
+            v->u.o.size = size;
+            memcpy(v->u.o.m = (json_member*)malloc(s),json_stack_pop(c,s),s);
+            return JSON_OK;
+        }
+        else{
+            ret = JSON_INPUT_ERROR;
+            break;
+        }
+        free(member.key_name);
+        for(i = 0;i<size;i++){
+            json_member* m = (json_member*)json_stack_pop(c,sizeof(json_member));
+            free(member.key_name);
+            json_free(&m->v);
+        }
+        v->type = JSON_NULL;
+        return ret;
+    }
+    return ret;
+}
+
 static json_error json_parse_array(json_struct *c , json_value *v)
 {
-    int size=0,i=0;
+    size_t size=0,i=0;
     json_error ret;
     assert(c->json[0]=='[');
     c->json++;
@@ -329,7 +332,7 @@ static json_error json_parse_array(json_struct *c , json_value *v)
         if((ret = read_value(c,&temp_value)!=JSON_OK))
             break;
         /*压栈*/
-        memcpy(json_strack_push(c,sizeof (json_value)),&temp_value,sizeof (json_value));
+        memcpy(json_stack_push(c,sizeof (json_value)),&temp_value,sizeof (json_value));
         size++;
         read_blank_first(c);
         if(c->json[0]==',')
@@ -343,14 +346,14 @@ static json_error json_parse_array(json_struct *c , json_value *v)
             v->u.a.size =size;
             v->type = JSON_ARRAY;
             size *= sizeof (json_value);
-            memcpy(v->u.a.e = (json_value*)malloc(size),josn_strack_pop(c,size),size);
+            memcpy(v->u.a.e = (json_value*)malloc(size),json_stack_pop(c,size),size);
             return JSON_OK;
         }
         else
             break;
     }
     for (i=0;i<size;i++) {
-        json_free((json_value*)josn_strack_pop(c,sizeof (json_value)));
+        json_free((json_value*)json_stack_pop(c,sizeof (json_value)));
     }
     return ret;
 }
@@ -365,6 +368,7 @@ static json_error read_value ( json_struct *c , json_value *v )
     case '\0': 	return JSON_ONLY_BLANK;
     case '"':	return json_parse_string ( c , v );
     case '[':   return json_parse_array( c , v );
+    case '{':   return json_parse_object( c , v );
     default: 	return read_number ( c , v );
     }
 }
@@ -473,3 +477,4 @@ json_value * json_get_array_element ( json_value *v,size_t index )
     assert(index<v->u.a.size);
     return &v->u.a.e[index];
 }
+
